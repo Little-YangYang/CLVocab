@@ -21,13 +21,13 @@
 
 把下面这句话发给你的 Claude Code（桌面版或 CLI 均可）：
 
-> 帮我安装这个背单词弹窗：https://github.com/<你的用户名>/vocab-popup
+> 帮我安装这个背单词弹窗：https://github.com/Little-YangYang/vocab-popup
 > 按仓库 README 里「给 Claude 的安装步骤」操作。
 
 ### 方式二：作为 Claude Code 插件
 
 ```
-/plugin marketplace add <你的用户名>/vocab-popup
+/plugin marketplace add Little-YangYang/vocab-popup
 /plugin install vocab-popup@vocab-popup
 ```
 
@@ -36,7 +36,7 @@
 ### 方式三：手动安装
 
 ```
-git clone https://github.com/<你的用户名>/vocab-popup.git
+git clone https://github.com/Little-YangYang/vocab-popup.git
 cd vocab-popup
 python install.py
 ```

@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "description": "Claude 干活时自动弹出的背单词小窗：出词带 TTS 发音，打标复背，选择题+默写，任务结束自动关闭（多会话感知）",
   "author": {
-    "name": "vocab-popup contributors"
+    "name": "Little-YangYang"
   }
 }
