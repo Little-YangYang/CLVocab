@@ -1,0 +1,12 @@
+# 个人学习状态（背诵进度、打标、测验成绩）
+state.json
+state.json.tmp
+state.json.bak
+
+# 调试与缓存
+control.log
+__pycache__/
+*.pyc
+
+# 词典源数据（63MB，用 tools/build_dicts.py 按需下载）
+ecdict.csv

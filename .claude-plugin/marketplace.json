@@ -1,0 +1,13 @@
+{
+  "name": "vocab-popup",
+  "owner": {
+    "name": "vocab-popup contributors"
+  },
+  "plugins": [
+    {
+      "name": "vocab-popup",
+      "source": "./",
+      "description": "Claude 干活时自动弹出的背单词小窗（Windows）：完整考试词表、TTS 发音、打标复背、选择题+默写"
+    }
+  ]
+}

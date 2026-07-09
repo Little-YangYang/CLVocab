@@ -1,0 +1,32 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hook_start.py"],
+            "async": true,
+            "timeout": 20,
+            "statusMessage": "打开背单词窗口"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hook_stop.py"],
+            "async": true,
+            "timeout": 15,
+            "statusMessage": "关闭背单词窗口"
+          }
+        ]
+      }
+    ]
+  }
+}
