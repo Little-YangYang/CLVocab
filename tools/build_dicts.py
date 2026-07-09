@@ -28,6 +28,16 @@ TAG_BOOKS = {
     "gre": "GRE",
 }
 
+# ECDICT 把一些普通词的考试标签挂在首字母大写的词头上（如 Conservative 的释义
+# 其实是"保守的"、CORE 是"核心"、FAX 是"传真"），这些词的通用义项占绝对主导、
+# 词典标准词头是小写，生成时归一为小写。真正的专有名词（月份/国家/节日/Odyssey
+# 奥德赛等）和缩写词（TV/AIDS/CD/B.C.）保持大写不动。
+NORMALIZE_LOWER = frozenset({
+    "Conservative", "CORE", "FAX", "Maxim", "Mister", "Perks", "Pole",
+    "Polish", "SAC", "Saint", "Satanic", "Spartan", "Stoic", "Stygian",
+    "Thespian", "Titanic", "Trident", "Utopia", "Utopian",
+})
+
 
 def download(dst):
     print(f"下载 {ECDICT_URL} -> {dst}（约 63MB，可能要几分钟）")
@@ -43,6 +53,7 @@ def main():
         download(src)
 
     books = {name: [] for name in TAG_BOOKS.values()}
+    seen = {name: set() for name in TAG_BOOKS.values()}
     csv.field_size_limit(10_000_000)
     with open(src, encoding="utf-8", newline="") as f:
         for row in csv.DictReader(f):
@@ -53,6 +64,8 @@ def main():
             hit = set((row.get("tag") or "").split()) & TAG_BOOKS.keys()
             if not hit:
                 continue
+            if word in NORMALIZE_LOWER:
+                word = word.lower()
             phonetic = (row.get("phonetic") or "").strip()
             entry = {
                 "word": word,
@@ -60,7 +73,10 @@ def main():
                 "meaning": trans.replace("\\n", "；").replace("\n", "；"),
             }
             for tag in hit:
-                books[TAG_BOOKS[tag]].append(entry)
+                name = TAG_BOOKS[tag]
+                if word.lower() not in seen[name]:
+                    seen[name].add(word.lower())
+                    books[name].append(entry)
 
     os.makedirs(DICTS_DIR, exist_ok=True)
     for name, words in books.items():
