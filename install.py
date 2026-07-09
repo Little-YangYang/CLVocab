@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""把背单词弹窗的钩子写进 ~/.claude/settings.json（免插件的安装方式）。
+"""把 CLVocab 背单词弹窗的钩子写进 ~/.claude/settings.json（免插件的安装方式）。
 
     python install.py               安装（重复运行是幂等的，会先移除旧条目再写入）
     python install.py --uninstall   卸载
@@ -17,7 +17,7 @@ import sys
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_SETTINGS = os.path.join(os.path.expanduser("~"), ".claude", "settings.json")
-MARK = "vocab_popup"  # 识别本项目钩子条目的特征串
+MARKS = ("clvocab", "vocab_popup")  # 本项目（含旧名）钩子条目的特征串
 
 
 def load_settings(path):
@@ -48,7 +48,7 @@ def hook_entry(script, timeout):
 
 def is_ours(group):
     blob = json.dumps(group, ensure_ascii=False)
-    return MARK in blob
+    return any(m in blob for m in MARKS)
 
 
 def main():
@@ -66,8 +66,8 @@ def main():
     data = load_settings(args.settings)
     hooks = data.setdefault("hooks", {})
     for event, script, timeout in (
-        ("UserPromptSubmit", "hook_start.py", 20),
-        ("Stop", "hook_stop.py", 15),
+        ("UserPromptSubmit", "clvocab_start.py", 20),
+        ("Stop", "clvocab_stop.py", 15),
     ):
         groups = [g for g in hooks.get(event, []) if not is_ours(g)]
         if not args.uninstall:
@@ -86,7 +86,7 @@ def main():
         json.dump(data, f, ensure_ascii=False, indent=2)
 
     action = "已卸载" if args.uninstall else "已安装"
-    print(f"{action}背单词弹窗钩子 -> {args.settings}")
+    print(f"{action} CLVocab 背单词弹窗钩子 -> {args.settings}")
     if os.path.exists(args.settings + ".bak"):
         print(f"原配置备份在 {args.settings}.bak")
     if not args.uninstall:

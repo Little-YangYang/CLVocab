@@ -1,4 +1,4 @@
-"""Stop 钩子：向弹窗注销本会话；所有会话都注销完弹窗才会关闭。"""
+"""Stop 钩子：向 CLVocab 弹窗注销本会话；所有会话都注销完弹窗才会关闭。"""
 
 import json
 import socket

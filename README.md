@@ -1,4 +1,4 @@
-# vocab-popup — Claude 干活时的背单词弹窗
+# CLVocab — Claude 干活时的背单词弹窗
 
 等 Claude Code 跑长任务的碎片时间，正好背几个单词。
 
@@ -21,14 +21,14 @@
 
 把下面这句话发给你的 Claude Code（桌面版或 CLI 均可）：
 
-> 帮我安装这个背单词弹窗：https://github.com/Little-YangYang/vocab-popup
+> 帮我安装这个背单词弹窗：https://github.com/Little-YangYang/CLVocab
 > 按仓库 README 里「给 Claude 的安装步骤」操作。
 
 ### 方式二：作为 Claude Code 插件
 
 ```
-/plugin marketplace add Little-YangYang/vocab-popup
-/plugin install vocab-popup@vocab-popup
+/plugin marketplace add Little-YangYang/CLVocab
+/plugin install clvocab@clvocab
 ```
 
 要求 PATH 里的 `python` 是带 tkinter 的 Python 3.8+。
@@ -36,8 +36,8 @@
 ### 方式三：手动安装
 
 ```
-git clone https://github.com/Little-YangYang/vocab-popup.git
-cd vocab-popup
+git clone https://github.com/Little-YangYang/CLVocab.git
+cd CLVocab
 python install.py
 ```
 
@@ -50,13 +50,13 @@ python install.py
 
 1. 确认环境：Windows 系统；`python --version` ≥ 3.8 且
    `python -c "import tkinter"` 不报错（否则提示用户安装官方版 Python 并勾选 tcl/tk）。
-2. 把仓库克隆到一个**稳定路径**（比如用户主目录下 `~/vocab-popup`，
+2. 把仓库克隆到一个**稳定路径**（比如用户主目录下 `~/CLVocab`，
    不要放临时目录——钩子会长期引用该路径）。
 3. 在仓库目录运行 `python install.py`，它会把两条钩子（UserPromptSubmit/Stop，
    使用当前解释器绝对路径）幂等地合并进 `~/.claude/settings.json`，并自动备份原配置。
-4. 运行 `python -m py_compile vocab_popup.py hook_start.py hook_stop.py` 验证无语法错误。
+4. 运行 `python -m py_compile clvocab.py clvocab_start.py clvocab_stop.py` 验证无语法错误。
 5. 告诉用户：重启 Claude Code 或开新会话后，发任意消息就会弹出背单词窗口；
-   Esc 或右上角 × 可手动关闭；学习进度存在 `~/.vocab_popup/state.json`。
+   Esc 或右上角 × 可手动关闭；学习进度存在 `~/.clvocab/state.json`。
 
 ## 使用说明
 
@@ -81,14 +81,14 @@ python install.py
 - **换/加词书**：往 `dicts/` 丢一个 `[{"word","phonetic","meaning"}, ...]` 格式的 JSON
   即可，文件名就是词书名。要重新生成或增加考试标签（中考/高考等），
   跑 `python tools/build_dicts.py`（详见脚本注释）。
-- **调节奏/比重**：改 `vocab_popup.py` 顶部常量——`REVEAL_MS`/`NEXT_MS`（自动播放节奏）、
+- **调节奏/比重**：改 `clvocab.py` 顶部常量——`REVEAL_MS`/`NEXT_MS`（自动播放节奏）、
   `STUDY_WEIGHTS`（复背比重）、`RECENT_BLOCK`（防重复窗口）、`MARK_PREVIEW_MS`（打标预览时长）。
 - 更多实现细节（控制协议、状态文件格式、算法）见 [SPEC.md](SPEC.md)。
 
 ## 工作原理（一句话版）
 
-两条 Claude Code 钩子：UserPromptSubmit 时 `hook_start.py` 向弹窗登记会话（没弹窗先启动），
-Stop 时 `hook_stop.py` 注销会话；弹窗监听本地端口做单实例锁 + 会话计数，
+两条 Claude Code 钩子：UserPromptSubmit 时 `clvocab_start.py` 向弹窗登记会话（没弹窗先启动），
+Stop 时 `clvocab_stop.py` 注销会话；弹窗监听本地端口做单实例锁 + 会话计数，
 所有会话注销完才关窗。详见 [SPEC.md](SPEC.md)。
 
 ## 许可

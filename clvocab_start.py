@@ -1,4 +1,4 @@
-"""UserPromptSubmit 钩子：向弹窗登记本会话；弹窗没开就先启动再登记。
+"""UserPromptSubmit 钩子：向 CLVocab 弹窗登记本会话；弹窗没开就先启动再登记。
 
 从 stdin 读钩子的 JSON 拿 session_id，向弹窗控制端口发 "start <sid>"。
 只有收到 "ok" 应答才算成功（避免误连到恰好占用候选端口的其他程序）。
@@ -12,7 +12,7 @@ import sys
 import time
 
 PORTS = (28471, 29873, 31597, 32851)
-APP = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vocab_popup.py")
+APP = os.path.join(os.path.dirname(os.path.abspath(__file__)), "clvocab.py")
 # 优先用 pythonw（无控制台窗口）；找不到就退回当前解释器并隐藏窗口
 _pyw = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
 PYTHONW = _pyw if os.path.exists(_pyw) else sys.executable

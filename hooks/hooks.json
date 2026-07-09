@@ -6,7 +6,7 @@
           {
             "type": "command",
             "command": "python",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hook_start.py"],
+            "args": ["${CLAUDE_PLUGIN_ROOT}/clvocab_start.py"],
             "async": true,
             "timeout": 20,
             "statusMessage": "打开背单词窗口"
@@ -20,7 +20,7 @@
           {
             "type": "command",
             "command": "python",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hook_stop.py"],
+            "args": ["${CLAUDE_PLUGIN_ROOT}/clvocab_stop.py"],
             "async": true,
             "timeout": 15,
             "statusMessage": "关闭背单词窗口"
