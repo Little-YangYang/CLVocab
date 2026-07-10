@@ -62,6 +62,10 @@ MARK_PREVIEW_MS = 2000  # 没看释义就打标时，先亮释义预览这么久
 HISTORY_CAP = 1000  # 历史记录条数上限
 SESSION_TTL = 8 * 3600  # 会话登记的过期时间（防某个会话崩溃后永远不关窗）
 
+# 错题记忆曲线（Leitner 盒式间隔复习）：每个词有一个格子 box，对应下次复测间隔。
+# 答错打回第 0 格（5 分钟后重考），答对升一格、间隔拉长；抽题时按到期程度加权。
+QUIZ_INTERVALS = (300, 1800, 7200, 28800, 86400, 259200, 604800)  # 5m 30m 2h 8h 1d 3d 7d
+
 # 背词乱序比重：每次"下一个"按权重决定出新词还是复背已打标的词（改数字即可调比重）。
 # 全部池子非空时约 60% 新词、20% 不认识、12% 模糊、8% 认识；某类没有词则权重自动让给其余类。
 STUDY_WEIGHTS = {"new": 60, "unknown": 20, "fuzzy": 12, "know": 8}
@@ -239,7 +243,8 @@ class Store:
 
     def word_stat(self, dict_name, word):
         return self.dict_words(dict_name).setdefault(
-            word, {"seen": 0, "mark": None, "mc_r": 0, "mc_w": 0, "sp_r": 0, "sp_w": 0, "last": 0}
+            word, {"seen": 0, "mark": None, "mc_r": 0, "mc_w": 0, "sp_r": 0, "sp_w": 0,
+                   "last": 0, "box": 0, "due": 0.0}
         )
 
     def bump_seen(self, dict_name, word):
@@ -251,11 +256,18 @@ class Store:
 
     def record(self, dict_name, word, event):
         st = self.word_stat(dict_name, word)
-        st["last"] = time.time()
+        now = time.time()
+        st["last"] = now
         if event.startswith("mark:"):
             st["mark"] = event.split(":", 1)[1]
         elif event in ("mc_r", "mc_w", "sp_r", "sp_w"):
             st[event] += 1
+            # 错题曲线：答对升格拉长间隔，答错打回第 0 格 5 分钟后重考
+            if event in ("mc_r", "sp_r"):
+                st["box"] = min(int(st.get("box") or 0) + 1, len(QUIZ_INTERVALS) - 1)
+            else:
+                st["box"] = 0
+            st["due"] = now + QUIZ_INTERVALS[st["box"]]
         self.data["history"].append({"t": time.time(), "dict": dict_name, "word": word, "event": event})
         if len(self.data["history"]) > HISTORY_CAP:
             self.data["history"] = self.data["history"][-HISTORY_CAP:]
@@ -344,12 +356,29 @@ class TTS:
 
 # ---------------------------------------------------------------- 测验逻辑（纯函数，便于测试）
 
-def quiz_weight(stat):
-    """抽题权重：标记难的、净答错多的优先。
+def quiz_urgency(stat, now):
+    """错题曲线的到期系数（0.1 ~ 3.0）。
 
-    答对会抵消此前的答错（净错误 = 错 - 0.75×对，下限 0），
-    所以一个词答顺了权重就回落，不会因早期的错永远霸榜；权重封顶防垄断。
+    以当前格子的复测间隔为尺度：过期越久越紧迫（封顶 3 倍）；
+    还没到期的压低但不清零（刚答错的词 5 分钟内先歇一歇，避免无意义的立刻重问）。
+    从没考过的词 due=0，视为严重过期 → 立即进入循环。
     """
+    box = min(int(stat.get("box") or 0), len(QUIZ_INTERVALS) - 1)
+    due = float(stat.get("due") or 0.0)
+    scale = QUIZ_INTERVALS[box]
+    if now >= due:
+        return min(1.0 + (now - due) / scale, 3.0)
+    return max(0.1, 1.0 - (due - now) / scale)
+
+
+def quiz_weight(stat, now=None):
+    """抽题权重 = (打标难度 + 慢性净错) × 到期系数。
+
+    - 打标难度：不认识 +3，模糊 +1.5
+    - 慢性净错：max(0, 错 - 0.75×对)，封顶 2 —— 长期答不对的词略微常驻
+    - 到期系数见 quiz_urgency：什么时候该复测由错题曲线决定
+    """
+    now = time.time() if now is None else now
     w = 1.0
     if stat.get("mark") == "unknown":
         w += 3.0
@@ -357,15 +386,16 @@ def quiz_weight(stat):
         w += 1.5
     wrong = stat.get("mc_w", 0) + stat.get("sp_w", 0)
     right = stat.get("mc_r", 0) + stat.get("sp_r", 0)
-    w += max(0.0, wrong - 0.75 * right)
-    return min(w, 8.0)
+    w += min(max(0.0, wrong - 0.75 * right), 2.0)
+    return min(w * quiz_urgency(stat, now), 10.0)
 
 
-def pick_quiz_word(words, stats, exclude=()):
+def pick_quiz_word(words, stats, exclude=(), now=None):
     """从打过标（=已背）的词里按权重抽一个；一个都没标过时返回 None。
 
     exclude 里的词（最近刚考过的）不抽，除非题库全被排除。
     """
+    now = time.time() if now is None else now
     pool = [w for w in words if stats.get(w["word"], {}).get("mark")]
     if not pool:
         return None
@@ -374,7 +404,7 @@ def pick_quiz_word(words, stats, exclude=()):
         filtered = [w for w in pool if w["word"] not in ex]
         if filtered:
             pool = filtered
-    weights = [quiz_weight(stats.get(w["word"], {})) for w in pool]
+    weights = [quiz_weight(stats.get(w["word"], {}), now) for w in pool]
     return random.choices(pool, weights=weights, k=1)[0]
 
 
