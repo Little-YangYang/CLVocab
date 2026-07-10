@@ -78,7 +78,7 @@ Claude Code 通过 stdin 向钩子命令传 JSON（含 `session_id` 等字段）
 ```json
 {
   "settings": {"dict": "CET4", "mode": "study", "autoplay": false,
-                "tts": true, "theme": "dark", "alpha": 1.0},
+                "tts": true, "theme": "dark", "alpha": 1.0, "scope": "all"},
   "progress": {"CET4": {"order": [/*打乱的下标*/], "pos": 42}},
   "words": {"CET4": {"cancel": {"seen": 3, "mark": "fuzzy", "last": 0.0,
                                   "mc_r": 1, "mc_w": 0, "sp_r": 0, "sp_w": 1}}},
@@ -95,6 +95,12 @@ Claude Code 通过 stdin 向钩子命令传 JSON（含 `session_id` 等字段）
 
 ## 算法
 
+### 词表范围（`filter_scope`）
+
+顶栏「全部/生词/已背」循环切换（`scope` ∈ `all | new | studied`，持久化），三种模式共用：
+生词 = 未打标的词，已背 = 打过标的词。背词的线性进度指针始终基于全表那一份持久顺序，
+范围外的词在推进时跳过（生词模式下打完标的词自然退出轮转）；范围为空时给对应提示。
+
 ### 背词出词（`_draw_next`）
 
 每次"下一个"按 `STUDY_WEIGHTS = {"new": 60, "unknown": 20, "fuzzy": 12, "know": 8}`
@@ -104,7 +110,9 @@ Claude Code 通过 stdin 向钩子命令传 JSON（含 `session_id` 等字段）
 
 ### 测验抽题（`pick_quiz_word` / `quiz_weight` / `quiz_urgency`）
 
-题库 = 打过标的词。每个词带**错题记忆曲线**状态：`box`（0..6 格）与 `due`（下次复测时间）。
+题库 = 当前词表范围内的词（`pick_quiz_word` 的 `marked_only=False` 配合 `filter_scope`；
+「已背」范围即传统的只考打过标的词）。每个词带**错题记忆曲线**状态：
+`box`（0..6 格）与 `due`（下次复测时间）。
 
 - 答错 → `box=0`，`due = now + 5分钟`；答对 → `box+1`，
   间隔按 `QUIZ_INTERVALS` 拉长：5分钟 → 30分钟 → 2小时 → 8小时 → 1天 → 3天 → 7天
